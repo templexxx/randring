@@ -5,7 +5,6 @@ package randring
 
 import (
 	"sync/atomic"
-	"time"
 	"unsafe"
 
 	"github.com/templexxx/cpu"
@@ -56,7 +55,6 @@ func New(n uint64) *Ring {
 func (r *Ring) Push(data unsafe.Pointer) {
 	idx := atomic.AddUint64(&r.writeIndex, 1) & r.mask
 	atomic.StorePointer(&r.buckets[idx].data, data)
-	time.Now().UnixNano()
 }
 
 // TryPop tries to pop data from the next bucket,
