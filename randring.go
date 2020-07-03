@@ -19,7 +19,8 @@ type bucket struct {
 	//_padding1 [falseSharingRange]byte
 }
 
-type ring struct {
+// Ring provides a ring buckets for multi-producer & one-consumer.
+type Ring struct {
 	mask       uint64
 	_          [falseSharingRange]byte
 	writeIndex uint64
@@ -36,13 +37,13 @@ type ring struct {
 
 // New creates a ring.
 // ring size = 2 ^ n.
-func New(n uint64) *ring {
+func New(n uint64) *Ring {
 
 	if n > 16 || n == 0 {
 		panic("illegal ring size")
 	}
 
-	r := &ring{
+	r := &Ring{
 		buckets: make([]bucket, 1<<n),
 		mask:    (1 << n) - 1,
 	}
@@ -52,7 +53,7 @@ func New(n uint64) *ring {
 }
 
 // Push puts the data in ring in the next bucket no matter what in it.
-func (r *ring) Push(data unsafe.Pointer) {
+func (r *Ring) Push(data unsafe.Pointer) {
 	idx := atomic.AddUint64(&r.writeIndex, 1) & r.mask
 	atomic.StorePointer(&r.buckets[idx].data, data)
 	time.Now().UnixNano()
@@ -60,7 +61,7 @@ func (r *ring) Push(data unsafe.Pointer) {
 
 // TryPop tries to pop data from the next bucket,
 // return (nil, false) if no data available.
-func (r *ring) TryPop() (unsafe.Pointer, bool) {
+func (r *Ring) TryPop() (unsafe.Pointer, bool) {
 
 	if r.readIndex > r.writeIndexCache {
 		r.writeIndexCache = atomic.LoadUint64(&r.writeIndex)
